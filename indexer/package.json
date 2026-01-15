@@ -1,0 +1,21 @@
+{
+    "name": "clearfall-indexer",
+    "version": "1.0.0",
+    "description": "Event indexer for ClearFall Protocol",
+    "main": "dist/main.js",
+    "scripts": {
+        "dev": "ts-node src/main.ts",
+        "build": "tsc",
+        "start": "node dist/main.js"
+    },
+    "dependencies": {
+        "ethers": "^6.9.0",
+        "mongodb": "^6.3.0",
+        "dotenv": "^16.3.1"
+    },
+    "devDependencies": {
+        "@types/node": "^20.10.0",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.3.3"
+    }
+}

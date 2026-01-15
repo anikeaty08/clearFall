@@ -1,0 +1,286 @@
+ClearFall Protocol
+
+A trustless, time-based Dutch auction protocol with fair price discovery.
+
+👥 ROLES (IMPORTANT)
+
+There are only two roles, and both are users:
+
+Auction Creator (any user)
+
+Bidder (any user)
+
+No admin.
+No superuser.
+No backdoors.
+
+👤 USER PERSPECTIVE — FULL WORKFLOW
+
+(This applies to both bidders and creators)
+
+🟢 1. Open App & Connect Wallet
+
+User opens ClearFall
+
+Connects wallet via WalletConnect
+
+App detects:
+
+Wallet address
+
+Network (Polygon)
+
+🟢 2. Choose an Action
+
+User can:
+
+Create an auction
+
+Participate in an auction
+
+View past auctions
+
+🟢 3A. Creating an Auction (User as Creator)
+Inputs:
+
+Token address
+
+Total supply to sell
+
+Start price
+
+End price
+
+Auction start time
+
+Auction end time
+
+Commit phase duration
+
+Reveal phase duration
+
+Non-reveal penalty
+
+What happens:
+
+User deposits tokens into contract
+
+Parameters become immutable
+
+Auction is scheduled
+
+“Once created, I cannot change anything.”
+
+🟢 3B. Participating in an Auction (User as Bidder)
+Commit Phase:
+
+User chooses quantity
+
+Frontend generates nonce
+
+Commitment hash created
+
+Funds locked in contract
+
+Reveal Phase:
+
+User reveals quantity + nonce
+
+Commitment verified
+
+🟢 4. Auction Runs Automatically
+
+Price decreases over time
+
+Demand accumulates
+
+Clearing happens automatically when demand ≥ supply
+
+No manual actions.
+No interference.
+
+🟢 5. Final Settlement
+
+Winners claim tokens
+
+Losers refunded
+
+Creators withdraw proceeds
+
+Everything enforced by contract.
+
+🧠 PRICE DISCOVERY (FINAL LOGIC)
+finalPrice = priceAt(timeWhenTotalDemand ≥ supply)
+
+
+Uniform for all winners.
+
+🏗️ FULL ARCHITECTURE
+User
+ ↓
+Frontend (Next.js)
+ ↓
+WalletConnect
+ ↓
+Polygon Smart Contracts
+ ↓
+Events
+ ↓
+Indexer
+ ↓
+MongoDB Atlas
+ ↓
+Notifications + Fast UI
+
+👨‍💻 DEVELOPER PERSPECTIVE — TECH STACK
+🔹 Blockchain / Protocol Layer
+
+Polygon PoS
+
+Solidity ^0.8.x
+
+OpenZeppelin
+
+ERC20 / ERC721 support
+
+🔹 Smart Contracts
+
+AuctionFactory.sol
+
+DutchAuction.sol
+
+Vault.sol
+
+Responsibilities:
+
+Auction creation
+
+Asset locking
+
+Commit–reveal bids
+
+Time-based pricing
+
+Automatic clearing
+
+Claims & refunds
+
+🔹 Frontend
+
+Next.js + React
+
+TypeScript
+
+TailwindCSS
+
+WalletConnect
+
+Ethers.js / Viem
+
+🔹 Indexer
+
+Node.js
+
+TypeScript
+
+Ethers.js
+
+Event listeners
+
+🔹 Database (MongoDB Atlas)
+
+Used ONLY for:
+
+Caching auction data
+
+UI performance
+
+Notifications
+
+Analytics
+
+Never trusted for logic.
+
+🔹 Notification System
+
+Backend workers
+
+Triggers:
+
+Reveal phase start
+
+Auction cleared
+
+Claim available
+
+Delivery:
+
+Email / Push / In-app
+
+📄 HOW MANY PAGES (FRONTEND)
+Core Pages (6)
+
+/ → Landing + active auctions
+
+/create → Create auction
+
+/auction/[id] → Auction detail
+
+/dashboard → User auctions & bids
+
+/claims → Claim / refund page
+
+/history → Past auctions
+
+🗂️ FOLDER STRUCTURE
+clearfall/
+├── contracts/
+│   ├── AuctionFactory.sol
+│   ├── DutchAuction.sol
+│   └── Vault.sol
+│
+├── frontend/
+│   ├── pages/
+│   │   ├── index.tsx
+│   │   ├── create.tsx
+│   │   ├── auction/[id].tsx
+│   │   ├── dashboard.tsx
+│   │   ├── claims.tsx
+│   │   └── history.tsx
+│   │
+│   ├── components/
+│   ├── hooks/
+│   ├── utils/
+│   └── styles/
+│
+├── indexer/
+│   ├── src/
+│   │   ├── listeners/
+│   │   ├── db/
+│   │   └── services/
+│   └── main.ts
+│
+├── backend/
+│   ├── notifications/
+│   ├── workers/
+│   └── api/
+│
+├── shared/
+│   ├── types/
+│   └── constants/
+│
+└── README.md
+
+🔐 SECURITY GUARANTEES
+
+No admin functions
+
+Immutable auctions
+
+Time-based price only
+
+Funds locked at commit
+
+Deterministic clearing
+
+Fully verifiable
