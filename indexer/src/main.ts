@@ -7,7 +7,12 @@ dotenv.config();
 // Configuration
 const RPC_URL = process.env.POLYGON_RPC_URL || "https://rpc-amoy.polygon.technology";
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017";
-const FACTORY_ADDRESS = process.env.FACTORY_ADDRESS || "";
+const FACTORY_ADDRESS = process.env.FACTORY_ADDRESS || "0x3f10025Ad4abddFa48eC05B63FFa84f71DA2d814";
+
+if (!FACTORY_ADDRESS) {
+    console.error("❌ FACTORY_ADDRESS is required! Please set it in your .env file");
+    process.exit(1);
+}
 
 // ABIs (simplified)
 const FACTORY_ABI = [
@@ -29,8 +34,13 @@ class ClearFallIndexer {
     private auctionContracts: Map<string, ethers.Contract> = new Map();
 
     constructor() {
-        this.provider = new ethers.JsonRpcProvider(RPC_URL);
-        this.factoryContract = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, this.provider);
+        try {
+            this.provider = new ethers.JsonRpcProvider(RPC_URL);
+            this.factoryContract = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, this.provider);
+        } catch (error) {
+            console.error("❌ Error initializing indexer:", error);
+            throw error;
+        }
     }
 
     async connect(): Promise<void> {
@@ -60,6 +70,8 @@ class ClearFallIndexer {
                     startPrice: startPrice.toString(),
                     endPrice: endPrice.toString(),
                     startTime: Number(startTime),
+                    title: "", // Will be updated via API if provided
+                    description: "", // Will be updated via API if provided
                     createdAt: new Date(),
                 });
 
@@ -114,6 +126,14 @@ class ClearFallIndexer {
         contract.on("AuctionCleared", async (clearingPrice, totalDemand, timestamp) => {
             console.log(`✨ Auction cleared: ${auctionAddress}`);
             await this.updateAuctionCleared(auctionAddress, clearingPrice.toString(), totalDemand.toString());
+            
+            // Notify all bidders
+            if (this.db) {
+                const bids = await this.db.collection("bids").find({ auction: auctionAddress }).toArray();
+                for (const bid of bids) {
+                    await this.createNotification(auctionAddress, bid.bidder, `Auction cleared at ${clearingPrice.toString()} wei!`);
+                }
+            }
         });
 
         // Claim events
@@ -127,6 +147,19 @@ class ClearFallIndexer {
                 type: "winner",
                 timestamp: new Date(),
             });
+            await this.createNotification(auctionAddress, bidder, "Tokens claimed successfully!");
+        });
+
+        contract.on("RefundClaimed", async (bidder, amount) => {
+            console.log(`💰 Refund claimed by ${bidder} on ${auctionAddress}`);
+            await this.saveClaim({
+                auction: auctionAddress,
+                bidder,
+                refundAmount: amount.toString(),
+                type: "refund",
+                timestamp: new Date(),
+            });
+            await this.createNotification(auctionAddress, bidder, "Refund claimed successfully!");
         });
     }
 
@@ -159,6 +192,17 @@ class ClearFallIndexer {
     private async saveClaim(claim: object): Promise<void> {
         if (!this.db) return;
         await this.db.collection("claims").insertOne(claim);
+    }
+
+    private async createNotification(auction: string, user: string, message: string): Promise<void> {
+        if (!this.db) return;
+        await this.db.collection("notifications").insertOne({
+            auction,
+            user,
+            message,
+            read: false,
+            timestamp: new Date(),
+        });
     }
 }
 

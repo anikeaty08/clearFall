@@ -9,11 +9,12 @@
         "start": "node dist/main.js"
     },
     "dependencies": {
+        "dotenv": "^16.3.1",
         "ethers": "^6.9.0",
-        "mongodb": "^6.3.0",
-        "dotenv": "^16.3.1"
+        "mongodb": "^6.3.0"
     },
     "devDependencies": {
+        "@types/mongodb": "^4.0.6",
         "@types/node": "^20.10.0",
         "ts-node": "^10.9.2",
         "typescript": "^5.3.3"
